@@ -116,13 +116,17 @@ def extract_body_schema(schema, models_schema):
         if s['paramType'] == 'body'
     ]
     if matching_body_schemas:
-        schema = matching_body_schemas[0]
-        type_ref = extract_validatable_type(schema['type'], models_schema)
-        # Unpleasant, but we are forced to replace 'type' defns with proper
-        # jsonschema refs.
-        if '$ref' in type_ref:
-            del schema['type']
-            schema.update(type_ref)
+        schema, = matching_body_schemas  # there should only be 1 body schema
+        # If "$ref" is specified, we should always follow it.
+        # Otherwise, we should try to fix things up -- using $ref instead
+        # of type if that is accurate.
+        if '$ref' not in schema:
+            type_ref = extract_validatable_type(schema['type'], models_schema)
+            # Unpleasant, but we are forced to replace 'type' defns with proper
+            # jsonschema refs.
+            if '$ref' in type_ref:
+                del schema['type']
+                schema.update(type_ref)
         return strip_swagger_markup(schema)
     else:
         return None
